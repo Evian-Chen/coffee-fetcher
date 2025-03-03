@@ -1,0 +1,29 @@
+ {
+  business_status: 'OPERATIONAL',
+  geometry: {
+    location: { lat: 25.0583934, lng: 121.560893 },
+    viewport: { northeast: [Object], southwest: [Object] }
+  },
+  icon: 'https://maps.gstatic.com/mapfiles/place_api/icons/v1/png_71/cafe-71.png',
+  icon_background_color: '#FF9E67',
+  icon_mask_base_uri: 'https://maps.gstatic.com/mapfiles/place_api/icons/v2/cafe_pinlet',
+  name: '六丁目',
+  opening_hours: { open_now: false },
+  photos: [
+    {
+      height: 717,
+      html_attributions: [Array],
+      photo_reference: 'AUy1YQ1IJ-Iv7Y88fPOivqp5N38iQK4LBnSKNEJWiiRmnfx851_Zl48g-xC-IcOskA_N9NUwQZXIXCicxGlgrKyCmwZxWspJj9JE1XwiSLGbBeqL3T8MDczIrGZCp5OoHhJ5h2HoRwA06ChQQg0HZxMjwCsKDRyZIWREci65dMfDdBSlJHBVtTtUGqQ7j-AmqkUlLvyzgXpd11rYg6Tdnn8KnxxlQjXbcf8hh9ETlJvTLWg-N50He5i_-Ij0bbjobHe6L5ZAnCq5KUWGUER0df5bGSeLW1xFJLQZlTLvmWqOoMoGMXh2Ws5OExHaaHQQsGDDJXVTVFWUDlY',
+      width: 960
+    }
+  ],
+  place_id: 'ChIJK6KuvJKrQjQRu0x6S4e2hEI',
+  plus_code: { compound_code: '3H56+99 台灣台北市松山區介壽里', global_code: '7QQ33H56+99' },
+  price_level: 2,
+  rating: 4.6,
+  reference: 'ChIJK6KuvJKrQjQRu0x6S4e2hEI',
+  scope: 'GOOGLE',
+  types: [ 'cafe', 'store', 'food', 'point_of_interest', 'establishment' ],
+  user_ratings_total: 1615,
+  vicinity: '松山區新中街6巷7號'
+}

@@ -1,0 +1,57 @@
+{
+  html_attributions: [],
+  result: {
+    address_components: [
+      [Object], [Object],
+      [Object], [Object],
+      [Object], [Object],
+      [Object]
+    ],
+    adr_address: '<span class="postal-code">105</span><span class="country-name">台灣</span><span class="region">台北市</span><span class="locality">松山區</span><span class="street-address">介壽里新中街6巷7號</span>',
+    business_status: 'OPERATIONAL',
+    current_opening_hours: { open_now: false, periods: [Array], weekday_text: [Array] },
+    delivery: false,
+    dine_in: true,
+    editorial_summary: { language: 'zh-TW', overview: '舒適的咖啡廳，供應卡布奇諾、抹茶拿鐵、各式特色咖啡、茶飲和甜點。' },
+    formatted_address: '105台灣台北市松山區新中街6巷7號',
+    formatted_phone_number: '02 2761 5510',
+    geometry: { location: [Object], viewport: [Object] },
+    icon: 'https://maps.gstatic.com/mapfiles/place_api/icons/v1/png_71/cafe-71.png',
+    icon_background_color: '#FF9E67',
+    icon_mask_base_uri: 'https://maps.gstatic.com/mapfiles/place_api/icons/v2/cafe_pinlet',
+    international_phone_number: '+886 2 2761 5510',
+    name: '六丁目',
+    opening_hours: { open_now: false, periods: [Array], weekday_text: [Array] },
+    photos: [
+      [Object], [Object],
+      [Object], [Object],
+      [Object], [Object],
+      [Object], [Object],
+      [Object], [Object]
+    ],
+    place_id: 'ChIJK6KuvJKrQjQRu0x6S4e2hEI',
+    plus_code: {
+      compound_code: '3H56+99 台灣台北市松山區介壽里',
+      global_code: '7QQ33H56+99'
+    },
+    price_level: 2,
+    rating: 4.6,
+    reference: 'ChIJK6KuvJKrQjQRu0x6S4e2hEI',
+    reviews: [ [Object], [Object], [Object], [Object], [Object] ],
+    serves_beer: false,
+    serves_breakfast: false,
+    serves_brunch: true,
+    serves_dinner: true,
+    serves_lunch: true,
+    serves_wine: false,
+    takeout: true,
+    types: [ 'cafe', 'store', 'food', 'point_of_interest', 'establishment' ],
+    url: 'https://maps.google.com/?cid=4793156595632196795',
+    user_ratings_total: 1615,
+    utc_offset: 480,
+    vicinity: '松山區新中街6巷7號',
+    website: 'http://www.facebook.com/rokucyoumecafe',
+    wheelchair_accessible_entrance: false
+  },
+  status: 'OK'
+}
