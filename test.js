@@ -1,11 +1,14 @@
 import { connectDB } from "./lib/mongodb.js";
 import mongoose from "mongoose";
 import axios from "axios";
-import { getLoactions } from "./lib/locationCrawler.js";
+import fs from "fs";
+import { getDiscrits } from "./getDiscrits.js";
+
 
 const GOOGLE_API_KEY = process.env.GOOGLE_MAP_API_KEY;
+const MONGODB_COFFEE_SHOP = process.env.MONGODB_COFFEE_SHOP;
 const LOCATION = "25.0330,121.5654"; // (latitude, longitude)
-const RADIUS = 5000;  // meter
+const RADIUS = 700; // meter
 
 async function testDB() {
   try {
@@ -22,14 +25,75 @@ async function testDB() {
   }
 }
 
+async function fetchCafesByRegion(city, district) {
+  let allResults = [];
+  let seenPlaceIds = new Set(); 
+
+  let url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${district}+${city}&type=cafe&language=zh-TW&key=${GOOGLE_API_KEY}`;
+  let next_page = null;
+
+  console.log(`fetching ${city} - ${district} cafe`);
+
+  while (url) {
+    let response = await axios.get(url);
+    let data = response.data;
+
+    if (!data.results || data.results.length === 0) break; 
+
+    
+    for (let shop of data.results) {
+      if (!seenPlaceIds.has(shop.place_id)) {
+        seenPlaceIds.add(shop.place_id);
+        allResults.push(shop);
+      }
+    }
+
+    console.log(`${city} - ${district} get ${allResults.length}`);
+
+    next_page = data.next_page_token;
+    if (next_page) {
+      await new Promise((resolve) => setTimeout(resolve, 2000)); 
+      url = `https://maps.googleapis.com/maps/api/place/textsearch/json?pagetoken=${next_page}&language=zh-TW&key=${GOOGLE_API_KEY}`;
+    } else {
+      url = null;
+    }
+  }
+
+  return { city, district, cafes: allResults };
+}
+
+
+async function fetchAllShops() {
+  let finalResults = {};
+  const d = await getDiscrits();
+  const taiwanRegions = Object.entries(d)[0];
+
+  for (const [city, districts] of Object.entries(taiwanRegions)) {
+    finalResults[city] = {};
+
+    for (const district of districts) {
+      const regionData = await fetchCafesByRegion(city, district);
+      finalResults[city][district] = regionData.cafes;
+    }
+  }
+
+  console.log("fetched all cities");
+
+  fs.writeFileSync("coffee_shops_by_district.json", JSON.stringify(finalResults, null, 2), "utf-8");
+  console.log("data saved to coffee_shops_by_district.json");
+}
+
 async function testGoogleAPI() {
   const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${LOCATION}&radius=${RADIUS}&type=cafe&language=zh-TW&key=${GOOGLE_API_KEY}`;
 
   try {
     const response = await axios.get(url);
-    const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${response.data.results[0].place_id}&language=zh-TW&key=${GOOGLE_API_KEY}`
+    const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${response.data.results[0].place_id}&language=zh-TW&key=${GOOGLE_API_KEY}`;
     const details = await axios.get(detailsUrl);
-    console.log("weekday_text: ", details.data.result.current_opening_hours.weekday_text);
+    console.log(
+      "weekday_text: ",
+      details.data.result.current_opening_hours.weekday_text
+    );
     console.log("formatted_address: ", details.data.result.formatted_address);
 
     // not only one photos(or maybe no photos), need to request using different url
@@ -48,14 +112,20 @@ async function testGoogleAPI() {
     console.log("takeout: ", details.data.result.takeout);
     console.log("types: ", details.data.result.types);
     console.log("user_ratings_total: ", details.data.result.user_ratings_total);
-    console.log("formatted_phone_number: ", details.data.result.formatted_phone_number);
+    console.log(
+      "formatted_phone_number: ",
+      details.data.result.formatted_phone_number
+    );
 
     // not only one reviewer, or maybe zero, need to expand the reviews
     console.log("review len: ", details.data.result.reviews.length);
     console.log("reviewer: ", details.data.result.reviews[0].author_name);
     console.log("reviewer_rating: ", details.data.result.reviews[0].rating);
-    console.log("review_text: ", details.data.result.reviews[0].text.split(/\s+/).join(''));
-    
+    console.log(
+      "review_text: ",
+      details.data.result.reviews[0].text.split(/\s+/).join("")
+    );
+
     // review time should be converted to local time (originally a timestamp)
     console.log("review_time: ", details.data.result.reviews[0].time);
     const date = new Date(details.data.result.reviews[0].time * 1000);
@@ -65,9 +135,17 @@ async function testGoogleAPI() {
   }
 }
 
+// const d = await getDiscrits();
+// console.log(Object.entries(d)[0]);
+
 // testDB();
-testGoogleAPI();
+// testGoogleAPI();
+fetchAllShops();
 
 // get the lantitude and longtitude of all taiwan cities
 // const lc = await getLoactions();
 // console.log(lc);
+
+// for (const [city, loc] of Object.entries(lc)) {
+//   console.log("key: " + city + " loc: " + loc);
+// }

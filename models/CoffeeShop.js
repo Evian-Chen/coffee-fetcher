@@ -1,4 +1,6 @@
-import mongoose from 'mongoose';
+// models/CoffeeShop.js
+
+import mongoose from "mongoose";
 
 /**
  * @typedef {Object} Review
@@ -21,27 +23,31 @@ import mongoose from 'mongoose';
 
 /**
  * @typedef {Object} CoffeeShop
+ * @property {string} discrict
+ * @property {string} city
  * @property {string} name - The name of the coffee shop (required).
  * @property {string} place_id - The unique identifier from Google Places API (required, unique).
  * @property {string} vicinity - The general location or area of the coffee shop (required).
  * @property {number} rating - The average rating of the coffee shop (required, range: 0-5).
  * @property {number} [price_level] - The price level of the coffee shop (optional, range: 0-4).
- * 
+ *
  * @property {string[]} weekday_text - The formatted opening hours for each day of the week (required).
  * @property {string} formatted_address - The full formatted address of the coffee shop (required).
  * @property {string} [formatted_phone_number] - The formatted phone number of the coffee shop (optional).
- * 
+ *
  * @property {Services} services - An object representing various available services (optional).
  * @property {string[]} [types] - The list of categories assigned to the coffee shop (restricted to predefined values).
  * @property {number} [user_rating_total] - The total number of user ratings.
- * 
+ *
  * @property {Review[]} [reviews] - An array of reviews left by customers.
- * 
+ *
  * @property {Date} createdAt - The timestamp when the record was created.
  * @property {Date} updatedAt - The timestamp when the record was last updated.
  */
 const CoffeeShopSchema = new mongoose.Schema(
   {
+    district: { type: String, required: true },
+    city: { type: String, required: true },
     name: { type: String, required: true },
     place_id: { type: String, required: true, unique: true },
     vicinity: { type: String, required: true },
@@ -61,7 +67,7 @@ const CoffeeShopSchema = new mongoose.Schema(
       serves_dinner: { type: Boolean, default: false },
       serves_lunch: { type: Boolean, default: false },
       serves_wine: { type: Boolean, default: false },
-      takeout: { type: Boolean, default: false }
+      takeout: { type: Boolean, default: false },
     },
 
     types: { type: [String] },
@@ -75,9 +81,9 @@ const CoffeeShopSchema = new mongoose.Schema(
         reviewer_name: { type: String, required: true },
         reviewer_rating: { type: Number, required: true, min: 0, max: 5 },
         review_text: { type: String, required: true },
-        review_time: { type: String }
-      }
-    ]
+        review_time: { type: String },
+      },
+    ],
   },
   { timestamps: true }
 );
