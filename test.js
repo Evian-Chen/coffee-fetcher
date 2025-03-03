@@ -1,9 +1,10 @@
 import { connectDB } from "./lib/mongodb.js";
 import mongoose from "mongoose";
 import axios from "axios";
+import { getLoactions } from "./lib/locationCrawler.js";
 
 const GOOGLE_API_KEY = process.env.GOOGLE_MAP_API_KEY;
-const LOCATION = "25.0330,121.5654";
+const LOCATION = "25.0330,121.5654"; // (latitude, longitude)
 const RADIUS = 5000;
 
 async function testDB() {
@@ -34,7 +35,8 @@ async function testGoogleAPI() {
   }
 }
 
-
-
 // testDB();
-testGoogleAPI();
+// testGoogleAPI();
+
+const lc = await getLoactions();
+console.log(lc);

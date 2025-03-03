@@ -21,6 +21,7 @@
   "dependencies": {
     "@googlemaps/google-maps-services-js": "^3.4.0",
     "axios": "^1.8.1",
+    "cheerio": "^1.0.0",
     "coffee-fetcher": "file:",
     "dotenv": "^16.4.7",
     "mongoose": "^8.11.0"
