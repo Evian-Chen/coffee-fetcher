@@ -23,7 +23,7 @@ import mongoose from "mongoose";
 
 /**
  * @typedef {Object} CoffeeShop
- * @property {string} discrict
+ * @property {string} district
  * @property {string} city
  * @property {string} name - The name of the coffee shop (required).
  * @property {string} place_id - The unique identifier from Google Places API (required, unique).
@@ -88,4 +88,5 @@ const CoffeeShopSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default CoffeeShopSchema;
+export const getCofeShopModel = (city) =>
+  mongoose.models[city] || mongoose.model(city, CoffeeShopSchema, city);

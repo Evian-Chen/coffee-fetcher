@@ -4,30 +4,12 @@ import axios from "axios";
 import fs from "fs";
 import { getDiscrits } from "./getDiscrits.js";
 
-
 const GOOGLE_API_KEY = process.env.GOOGLE_MAP_API_KEY;
 const MONGODB_COFFEE_SHOP = process.env.MONGODB_COFFEE_SHOP;
-const LOCATION = "25.0330,121.5654"; // (latitude, longitude)
-const RADIUS = 700; // meter
-
-async function testDB() {
-  try {
-    const db = await connectDB();
-    console.log("MongoDB connection success!");
-
-    console.log("DB Name:", db.connection.name);
-    console.log("DB Host:", db.connection.host);
-
-    await mongoose.connection.close();
-    console.log("MongoDB connection closed.");
-  } catch (error) {
-    console.error("MongoDB connection failed:", error);
-  }
-}
 
 async function fetchCafesByRegion(city, district) {
   let allResults = [];
-  let seenPlaceIds = new Set(); 
+  let seenPlaceIds = new Set();
 
   let url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${district}+${city}&type=cafe&language=zh-TW&key=${GOOGLE_API_KEY}`;
   let next_page = null;
@@ -38,9 +20,8 @@ async function fetchCafesByRegion(city, district) {
     let response = await axios.get(url);
     let data = response.data;
 
-    if (!data.results || data.results.length === 0) break; 
+    if (!data.results || data.results.length === 0) break;
 
-    
     for (let shop of data.results) {
       if (!seenPlaceIds.has(shop.place_id)) {
         seenPlaceIds.add(shop.place_id);
@@ -52,7 +33,7 @@ async function fetchCafesByRegion(city, district) {
 
     next_page = data.next_page_token;
     if (next_page) {
-      await new Promise((resolve) => setTimeout(resolve, 2000)); 
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       url = `https://maps.googleapis.com/maps/api/place/textsearch/json?pagetoken=${next_page}&language=zh-TW&key=${GOOGLE_API_KEY}`;
     } else {
       url = null;
@@ -62,22 +43,24 @@ async function fetchCafesByRegion(city, district) {
   return { city, district, cafes: allResults };
 }
 
-
 async function fetchAllShops() {
   let finalResults = {};
-  const d = await getDiscrits();
-  const taiwanRegions = Object.entries(d)[0];
+  const taiwanRegions = await getDiscrits();
 
   for (const [city, districts] of Object.entries(taiwanRegions)) {
+    console.log("city: ", city);
+    console.log("dis: ", districts);
+
     finalResults[city] = {};
 
     for (const district of districts) {
+      console.log("d:", district);
       const regionData = await fetchCafesByRegion(city, district);
       finalResults[city][district] = regionData.cafes;
     }
   }
 
-  console.log("fetched all cities");
+  console.log("fetched all cities: ", finalResults);
 
   fs.writeFileSync("coffee_shops_by_district.json", JSON.stringify(finalResults, null, 2), "utf-8");
   console.log("data saved to coffee_shops_by_district.json");
@@ -136,9 +119,17 @@ async function testGoogleAPI() {
 }
 
 // const d = await getDiscrits();
+// Object.entries(d).forEach(async ([city, districts]) => {
+//   console.log("city: ", city);
+//   console.log("dis: ", districts);
+
+//   for (const district of districts) {
+//     console.log("dict: ", district);
+//   }
+// });
+// console.log(d);
 // console.log(Object.entries(d)[0]);
 
-// testDB();
 // testGoogleAPI();
 fetchAllShops();
 
