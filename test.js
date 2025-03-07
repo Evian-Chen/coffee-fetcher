@@ -3,13 +3,60 @@ import mongoose from "mongoose";
 import axios from "axios";
 import fs from "fs";
 import { getDiscrits } from "./getDiscrits.js";
+import { getCafeShopModel } from "./models/CoffeeShop.js";
 
 const GOOGLE_API_KEY = process.env.GOOGLE_MAP_API_KEY;
 const MONGODB_COFFEE_SHOP = process.env.MONGODB_COFFEE_SHOP;
 
+async function saveToMongoDB(shop, city, district, cafeModel) {
+  console.log("shop: \n", shop, "\n\n===========\n");
+  const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${shop.place_id}&language=zh-TW&key=${GOOGLE_API_KEY}`;
+  const detail = await axios.get(detailsUrl);
+
+  const coffeeShopData = {
+    city,
+    district,
+    name: shop.name,
+    place_id: shop.place_id,
+    vicinity: shop.vicinity || "",
+    rating: shop.rating || 0,
+    price_level: shop.price_level || null,
+    weekday_text: shop.opening_hours?.weekday_text || [],
+    formatted_address: shop.formatted_address || "",
+    formatted_phone_number: shop.formatted_phone_number || "",
+    services: {
+      serves_beer: false,
+      serves_breakfast: false,
+      serves_brunch: false,
+      serves_dinner: false,
+      serves_lunch: false,
+      serves_wine: false,
+      takeout: shop.business_status === "OPERATIONAL",
+    },
+    types: shop.types || [],
+    user_rating_total: shop.user_ratings_total || 0,
+    reviews:
+      shop.reviews?.map((review) => ({
+        reviewer_name: review.author_name,
+        reviewer_rating: review.rating,
+        review_text: review.text,
+        review_time: review.relative_time_description,
+      })) || [],
+  };
+
+  await cafeModel.updateOne(
+    { place_id: shop.place_id },
+    { $set: coffeeShopData },
+    { upsert: true }
+  );
+}
+
 async function fetchCafesByRegion(city, district) {
   let allResults = [];
   let seenPlaceIds = new Set();
+
+  // get city collection connection
+  const cafeModel = getCafeShopModel(city);
 
   let url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${district}+${city}&type=cafe&language=zh-TW&key=${GOOGLE_API_KEY}`;
   let next_page = null;
@@ -26,6 +73,7 @@ async function fetchCafesByRegion(city, district) {
       if (!seenPlaceIds.has(shop.place_id)) {
         seenPlaceIds.add(shop.place_id);
         allResults.push(shop);
+        saveToMongoDB(shop, city, district, cafeModel);
       }
     }
 
@@ -62,7 +110,11 @@ async function fetchAllShops() {
 
   console.log("fetched all cities: ", finalResults);
 
-  fs.writeFileSync("coffee_shops_by_district.json", JSON.stringify(finalResults, null, 2), "utf-8");
+  fs.writeFileSync(
+    "coffee_shops_by_district.json",
+    JSON.stringify(finalResults, null, 2),
+    "utf-8"
+  );
   console.log("data saved to coffee_shops_by_district.json");
 }
 

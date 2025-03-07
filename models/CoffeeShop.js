@@ -88,5 +88,5 @@ const CoffeeShopSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export const getCofeShopModel = (city) =>
+export const getCafeShopModel = (city) =>
   mongoose.models[city] || mongoose.model(city, CoffeeShopSchema, city);

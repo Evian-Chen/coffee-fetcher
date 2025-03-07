@@ -1,0 +1,35 @@
+ {
+  business_status: 'OPERATIONAL',
+  formatted_address: '10491台灣台北市中山區中山北路二段26巷11號',
+  geometry: {
+    location: { lat: 25.0540332, lng: 121.5217837 },
+    viewport: { northeast: [Object], southwest: [Object] }      
+  },
+  icon: 'https://maps.gstatic.com/mapfiles/place_api/icons/v1/png_71/cafe-71.png',
+  icon_background_color: '#FF9E67',
+  icon_mask_base_uri: 'https://maps.gstatic.com/mapfiles/place_api/icons/v2/cafe_pinlet',
+  name: "Cafe' a' la mode 中山店",
+  opening_hours: { open_now: false },
+  photos: [
+    {
+      height: 3024,
+      html_attributions: [Array],
+      photo_reference: 'AUy1YQ2S5uXd44bRdyKkOxdL0CFc05yU9S0fdDGaWQVdE_ustyrFKTAfAtDyaqecaZurrKPIAU7rlZGi7cSVFmcfB3Vcst8W8CcdX06kYuHLas6UJ4ePuqCruQC3g4rFplKxhXYdMHblX_xCXTK_xRMbqzUZgLQ57HDV4tHFYP-eOrC_4FdzXqGSLHoL',
+      width: 4032
+    }
+  ],
+  place_id: 'ChIJb7wiEWmpQjQR2s-iHiPv944',
+  plus_code: { compound_code: '3G3C+JP 民安里 台北市中山區', global_code: '7QQ33G3C+JP' },
+  price_level: 2,
+  rating: 4.3,
+  reference: 'ChIJb7wiEWmpQjQR2s-iHiPv944',
+  types: [
+    'cafe',
+    'restaurant',
+    'food',
+    'store',
+    'point_of_interest',
+    'establishment'
+  ],
+  user_ratings_total: 934
+}
