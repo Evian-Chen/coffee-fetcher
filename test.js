@@ -183,6 +183,7 @@ async function fetchAllShops() {
   console.log("data saved to coffee_shops_by_district.json");
 }
 
+
 async function testGoogleAPI() {
   const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=25.0330,121.5654&radius=1000&type=cafe&language=zh-TW&key=${GOOGLE_API_KEY}`;
 

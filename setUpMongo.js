@@ -1,11 +1,8 @@
 import mongoose, { Mongoose } from "mongoose";
-import { connectDB } from "./lib/mongodb.js";
-import DistrictSchema from "./models/District.js";
 import CoffeeShopSchema from "./models/CoffeeShop.js";
 import { getDiscrits } from "./getDiscrits.js";
 
-const MONGODB_URI =
-  "mongodb+srv://paramecium128:921208kk@coffee-shop.rvixa.mongodb.net";
+const MONGODB_URI = process.env.MONGODB_COFFEE_SHOP;
 
 async function connectCityShopDB(city) {
   const uri = `${MONGODB_URI}/${city}?retryWrites=true&w=majority`;
