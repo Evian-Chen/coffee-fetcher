@@ -1,47 +1,69 @@
 import { connectDB } from "./lib/mongodb.js";
-import mongoose from "mongoose";
+import mongoose, { mongo } from "mongoose";
 import axios from "axios";
-import fs from "fs";
+import fs, { readlink } from "fs";
 import { getDiscrits } from "./getDiscrits.js";
 import { getCafeShopModel } from "./models/CoffeeShop.js";
+import readline from "readline";
+import { resolve } from "path";
 
 const GOOGLE_API_KEY = process.env.GOOGLE_MAP_API_KEY;
 const MONGODB_COFFEE_SHOP = process.env.MONGODB_COFFEE_SHOP;
 
 async function saveToMongoDB(shop, city, district, cafeModel) {
-  console.log("shop: \n", shop, "\n\n===========\n");
+  if (mongoose.connection.readyState !== 1) {
+    console.error("mongo not connected yet");
+    await connectDB();
+  }
+
+  console.log("shop: \n", city, "-", district, "\n===========\n");
+
   const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${shop.place_id}&language=zh-TW&key=${GOOGLE_API_KEY}`;
   const detail = await axios.get(detailsUrl);
+  const detailData = detail.data.result;
+
+  let reviewsData = [];
+  if (detailData.reviews && Array.isArray(detailData.reviews)) {
+    for (let i = 0; i < detailData.reviews.length; i++) {
+      const review = detailData.reviews[i];
+
+      reviewsData.push({
+        reviewer_name: review.author_name || "Unknown",
+        reviewer_rating: review.rating || 0,
+        review_text: review.text ? review.text.split(/\s+/).join(" ") : "",
+        review_time: review.relative_time_description || "Unknown",
+      });
+    }
+  }
 
   const coffeeShopData = {
+    // from original shop data
     city,
     district,
     name: shop.name,
     place_id: shop.place_id,
-    vicinity: shop.vicinity || "",
     rating: shop.rating || 0,
     price_level: shop.price_level || null,
-    weekday_text: shop.opening_hours?.weekday_text || [],
     formatted_address: shop.formatted_address || "",
-    formatted_phone_number: shop.formatted_phone_number || "",
-    services: {
-      serves_beer: false,
-      serves_breakfast: false,
-      serves_brunch: false,
-      serves_dinner: false,
-      serves_lunch: false,
-      serves_wine: false,
-      takeout: shop.business_status === "OPERATIONAL",
-    },
     types: shop.types || [],
-    user_rating_total: shop.user_ratings_total || 0,
-    reviews:
-      shop.reviews?.map((review) => ({
-        reviewer_name: review.author_name,
-        reviewer_rating: review.rating,
-        review_text: review.text,
-        review_time: review.relative_time_description,
-      })) || [],
+
+    // from detail
+    vicinity: detail.vicinity || "",
+    weekday_text: detailData.current_opening_hours.weekday_text || [],
+    formatted_phone_number: detailData.formatted_phone_number || "",
+    services: {
+      serves_beer: detailData.serves_beer,
+      serves_breakfast: detailData.serves_breakfast,
+      serves_brunch: detailData.serves_brunch,
+      serves_dinner: detailData.serves_dinner,
+      serves_lunch: detailData.serves_lunch,
+      serves_wine: detailData.serves_wine,
+      takeout: detailData.takeout === "OPERATIONAL",
+    },
+
+    user_rating_total: detailData.user_rating_total || 0,
+
+    reviews: reviewsData,
   };
 
   await cafeModel.updateOne(
@@ -49,6 +71,24 @@ async function saveToMongoDB(shop, city, district, cafeModel) {
     { $set: coffeeShopData },
     { upsert: true }
   );
+
+  console.log("save ", shop.name);
+
+  await pauseExcution();
+}
+
+async function pauseExcution() {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    rl.question("press enter...", () => {
+      rl.close();
+      resolve();
+    });
+  });
 }
 
 async function fetchCafesByRegion(city, district) {
@@ -56,7 +96,13 @@ async function fetchCafesByRegion(city, district) {
   let seenPlaceIds = new Set();
 
   // get city collection connection
-  const cafeModel = getCafeShopModel(city);
+  console.log("getting shop model");
+  if (!mongoose.connection.readyState) {
+    console.error("trying to get model but mongoDB not connected");
+    await connectDB();
+  }
+  let cafeModel = getCafeShopModel(city);
+  console.log("cafeModel: ", cafeModel);
 
   let url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${district}+${city}&type=cafe&language=zh-TW&key=${GOOGLE_API_KEY}`;
   let next_page = null;
@@ -73,7 +119,7 @@ async function fetchCafesByRegion(city, district) {
       if (!seenPlaceIds.has(shop.place_id)) {
         seenPlaceIds.add(shop.place_id);
         allResults.push(shop);
-        saveToMongoDB(shop, city, district, cafeModel);
+        await saveToMongoDB(shop, city, district, cafeModel);
       }
     }
 
@@ -91,7 +137,22 @@ async function fetchCafesByRegion(city, district) {
   return { city, district, cafes: allResults };
 }
 
+async function ensureDatabaseExists(city) {
+  const db = mongoose.connection.useDb("shops");
+  const collections = await db.listCollections();
+  const collectionNames = collections.map((c) => c.name);
+
+  if (!collectionNames.includes(city)) {
+    console.log(city, " not in shop database");
+    await db.createCollection(city);
+  } else {
+    console.log(city, " exists in shop DB");
+  }
+}
+
 async function fetchAllShops() {
+  await connectDB();
+
   let finalResults = {};
   const taiwanRegions = await getDiscrits();
 
@@ -101,6 +162,9 @@ async function fetchAllShops() {
 
     finalResults[city] = {};
 
+    // set up collection
+    await ensureDatabaseExists(city);
+
     for (const district of districts) {
       console.log("d:", district);
       const regionData = await fetchCafesByRegion(city, district);
@@ -108,7 +172,7 @@ async function fetchAllShops() {
     }
   }
 
-  console.log("fetched all cities: ", finalResults);
+  console.log("fetched all cities: ", finalResults.length);
 
   fs.writeFileSync(
     "coffee_shops_by_district.json",
@@ -119,52 +183,56 @@ async function fetchAllShops() {
 }
 
 async function testGoogleAPI() {
-  const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${LOCATION}&radius=${RADIUS}&type=cafe&language=zh-TW&key=${GOOGLE_API_KEY}`;
+  const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=25.0330,121.5654&radius=1000&type=cafe&language=zh-TW&key=${GOOGLE_API_KEY}`;
 
   try {
     const response = await axios.get(url);
     const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${response.data.results[0].place_id}&language=zh-TW&key=${GOOGLE_API_KEY}`;
     const details = await axios.get(detailsUrl);
-    console.log(
-      "weekday_text: ",
-      details.data.result.current_opening_hours.weekday_text
-    );
-    console.log("formatted_address: ", details.data.result.formatted_address);
 
-    // not only one photos(or maybe no photos), need to request using different url
-    console.log("photos len: ", details.data.result.photos.length);
-    console.log("photos: ", details.data.result.photos[0].photo_reference);
-    // const photoRef = details.data.result.photos[0].photo_reference;
-    // const photoURL = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoRef}&key=${GOOGLE_API_KEY}`;
-    // console.log(photoURL);
+    let data = response.data;
 
-    console.log("serves_beer: ", details.data.result.serves_beer);
-    console.log("serves_breakfast: ", details.data.result.serves_breakfast);
-    console.log("serves_brunch: ", details.data.result.serves_brunch);
-    console.log("serves_dinner: ", details.data.result.serves_dinner);
-    console.log("serves_lunch: ", details.data.result.serves_lunch);
-    console.log("serves_wine: ", details.data.result.serves_wine);
-    console.log("takeout: ", details.data.result.takeout);
-    console.log("types: ", details.data.result.types);
-    console.log("user_ratings_total: ", details.data.result.user_ratings_total);
-    console.log(
-      "formatted_phone_number: ",
-      details.data.result.formatted_phone_number
-    );
+    for (let shop of data.results) {
+      let detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${shop.place_id}&language=zh-TW&key=${GOOGLE_API_KEY}`;
+      let detail = await axios.get(detailsUrl);
+      let detailData = detail.data.result;
 
-    // not only one reviewer, or maybe zero, need to expand the reviews
-    console.log("review len: ", details.data.result.reviews.length);
-    console.log("reviewer: ", details.data.result.reviews[0].author_name);
-    console.log("reviewer_rating: ", details.data.result.reviews[0].rating);
-    console.log(
-      "review_text: ",
-      details.data.result.reviews[0].text.split(/\s+/).join("")
-    );
+      console.log("placeId: ", shop.place_id);
+      console.log("rating: ", shop.rating);
+      console.log("price_level: ", shop.price_level);
+      console.log("formatted_address: ", shop.formatted_address);
+      console.log("types: ", shop.types);
 
-    // review time should be converted to local time (originally a timestamp)
-    console.log("review_time: ", details.data.result.reviews[0].time);
-    const date = new Date(details.data.result.reviews[0].time * 1000);
-    console.log("timestamp_convert: ", date.toLocaleDateString());
+      console.log("vicinity: ", detailData.vicinity);
+      console.log(
+        "weekday_text: ",
+        detailData.current_opening_hours.weekday_text
+      );
+      console.log(
+        "formatted_phone_number: ",
+        detailData.formatted_phone_number
+      );
+      console.log("serves_beer: ", detailData.serves_beer);
+      console.log("serves_breakfast: ", detailData.serves_breakfast);
+      console.log("serves_brunch: ", detailData.serves_brunch);
+      console.log("serves_dinner: ", detailData.serves_dinner);
+      console.log("serves_lunch: ", detailData.serves_lunch);
+      console.log("serves_wine: ", detailData.serves_wine);
+      console.log("takeout: ", detailData.takeout);
+
+      console.log("user_rating_total: ", detailData.user_rating_total);
+
+      for (let i = 0; i < detailData.reviews.length; i++) {
+        console.log("reviewer: ", detailData.reviews[i].author_name);
+        console.log("rating: ", detailData.reviews[i].rating);
+        console.log("text: ", detailData.reviews[i].text.split(/\s+/).join(""));
+        console.log(
+          "relative_time_description: ",
+          detailData.reviews[i].relative_time_description
+        );
+      }
+      console.log("\n\n\n\n====================\n\n\n\n");
+    }
   } catch (error) {
     console.error("failed connection: ", error.message);
   }
@@ -183,7 +251,12 @@ async function testGoogleAPI() {
 // console.log(Object.entries(d)[0]);
 
 // testGoogleAPI();
-fetchAllShops();
+// fetchAllShops();
+
+const taiwanRegions = await getDiscrits();
+
+console.log(taiwanRegions);
+
 
 // get the lantitude and longtitude of all taiwan cities
 // const lc = await getLoactions();
