@@ -101,6 +101,7 @@ async function fetchCafesByRegion(city, district) {
     console.error("trying to get model but mongoDB not connected");
     await connectDB();
   }
+
   let cafeModel = getCafeShopModel(city);
   console.log("cafeModel: ", cafeModel);
 
@@ -253,9 +254,7 @@ async function testGoogleAPI() {
 // testGoogleAPI();
 // fetchAllShops();
 
-const taiwanRegions = await getDiscrits();
-
-console.log(taiwanRegions);
+setupShopDB();
 
 
 // get the lantitude and longtitude of all taiwan cities

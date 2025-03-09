@@ -8,8 +8,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export async function getDiscrits() {
-    await connectDB();
-    console.log("connected to mongoDB");
+    // await connectDB();
+    // console.log("connected to mongoDB getDistrict");
 
     const regions = {};
 
@@ -27,8 +27,9 @@ export async function getDiscrits() {
     } catch (err) {
         console.log("error: ", err)
         return {};
-    } finally {
-        await mongoose.connection.close();
-        console.log("mongo connection closed");
-    }
+    } 
+    // finally {
+    //     await mongoose.connection.close();
+    //     console.log("mongo connection closed");
+    // }
 }
