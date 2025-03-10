@@ -18,8 +18,7 @@ async function connectCityShopDB(city) {
 
 // 建立資料庫和collections
 async function setupMongo() {
-  // 先從test資料庫取得台灣所有縣市與行政區
-  await mongoose.connect(`${MONGODB_URI}/test?retryWrites=true&w=majority`);
+  // 先取得台灣所有縣市與行政區
   const regions = await getDiscrits();
   console.log(regions);
   await mongoose.connection.close();

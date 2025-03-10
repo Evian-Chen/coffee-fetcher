@@ -2,14 +2,14 @@
 
 import mongoose from "mongoose";
 import DistrictSchema from "./models/District.js";
-import { connectDB } from "./lib/mongodb.js";
 import dotenv from "dotenv";
 
 dotenv.config();
+const MONGODB_URI = process.env.MONGODB_COFFEE_SHOP;
 
 export async function getDiscrits() {
-    // await connectDB();
-    // console.log("connected to mongoDB getDistrict");
+    // 進入test資料庫取得行政區
+    await mongoose.connect(`${MONGODB_URI}/test?retryWrites=true&w=majority`);
 
     const regions = {};
 
@@ -28,8 +28,4 @@ export async function getDiscrits() {
         console.log("error: ", err)
         return {};
     } 
-    // finally {
-    //     await mongoose.connection.close();
-    //     console.log("mongo connection closed");
-    // }
 }
