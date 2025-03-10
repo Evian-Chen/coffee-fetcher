@@ -1,9 +1,14 @@
+// setUpMongo.js
+
+// 這個檔案負責建立每個縣市的資料庫(DB)，並且將縣市底下的行政區加入collection
+
 import mongoose, { Mongoose } from "mongoose";
 import CoffeeShopSchema from "./models/CoffeeShop.js";
 import { getDiscrits } from "./getDiscrits.js";
 
 const MONGODB_URI = process.env.MONGODB_COFFEE_SHOP;
 
+// 取得對每個縣市資料庫的連線
 async function connectCityShopDB(city) {
   const uri = `${MONGODB_URI}/${city}?retryWrites=true&w=majority`;
   const conn = await mongoose.createConnection(uri);
@@ -11,23 +16,25 @@ async function connectCityShopDB(city) {
   return conn;
 }
 
+// 建立資料庫和collections
 async function setupMongo() {
+  // 先從test資料庫取得台灣所有縣市與行政區
   await mongoose.connect(`${MONGODB_URI}/test?retryWrites=true&w=majority`);
   const regions = await getDiscrits();
   console.log(regions);
   await mongoose.connection.close();
 
   for (let [city, d] of Object.entries(regions)) {
-    // build city database
+    // 建立縣市的資料庫連線（同時建立資料庫）
     const cityConn = await connectCityShopDB(city);
 
     for (let district of d) {
-      // build distrcit collection
+      // 建立每一個行政區的collection
       const disModel = cityConn.model(district, CoffeeShopSchema);
 
       const testData = {
-        city: "台北市",
-        district: "中正區",
+        city: city,
+        district: district,
         name: "測試咖啡廳",
         place_id: "test_place_id_123",
         vicinity: "台北市中正區測試路 123 號",
@@ -44,7 +51,7 @@ async function setupMongo() {
           "星期六: 09:00 – 23:00",
           "星期日: 09:00 – 23:00",
         ],
-        formatted_address: "台北市中正區測試路 123 號",
+        formatted_address: `${city}${district}測試路 123 號`,
         formatted_phone_number: "02-1234-5678",
 
         // Services
@@ -90,12 +97,12 @@ async function setupMongo() {
         ],
       };
 
+      // 加入測試資料
       await disModel.create(testData);
 
       console.log(district, " collection set up");
     }
     await cityConn.close();
-    process.exit(0);
   }
 }
 

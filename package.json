@@ -24,6 +24,7 @@
     "cheerio": "^1.0.0",
     "coffee-fetcher": "file:",
     "dotenv": "^16.4.7",
-    "mongoose": "^8.11.0"
+    "mongodb": "^6.14.2",
+    "mongoose": "^8.12.1"
   }
 }
