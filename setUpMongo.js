@@ -22,6 +22,7 @@ async function setupMongo() {
     const cityConn = await connectCityShopDB(city);
 
     for (let district of d) {
+      // build distrcit collection
       const disModel = cityConn.model(district, CoffeeShopSchema);
 
       const testData = {
@@ -91,8 +92,7 @@ async function setupMongo() {
 
       await disModel.create(testData);
 
-      console.log("collection set up");
-      
+      console.log(district, " collection set up");
     }
     await cityConn.close();
     process.exit(0);
