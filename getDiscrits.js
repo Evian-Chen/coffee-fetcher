@@ -1,5 +1,7 @@
 // getDiscrits.js
 
+// 這份檔案抓取test database底下的行政區資料
+
 import mongoose from "mongoose";
 import DistrictSchema from "./models/District.js";
 import dotenv from "dotenv";

@@ -2,7 +2,7 @@
 
 // 這個檔案負責建立每個縣市的資料庫(DB)，並且將縣市底下的行政區加入collection
 
-import mongoose, { Mongoose } from "mongoose";
+import mongoose from "mongoose";
 import CoffeeShopSchema from "./models/CoffeeShop.js";
 import { getDiscrits } from "./getDiscrits.js";
 
@@ -104,5 +104,6 @@ async function setupMongo() {
     await cityConn.close();
   }
 }
+
 
 setupMongo();
