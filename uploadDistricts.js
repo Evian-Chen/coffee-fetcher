@@ -1,4 +1,8 @@
-﻿import mongoose from "mongoose";
+﻿// uploadDistricts.js
+
+// 這個檔案建立一個資料庫儲存台灣的行政區
+
+import mongoose from "mongoose";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -427,5 +431,6 @@ async function uploadData() {
     mongoose.connection.close();
   }
 }
+
 
 uploadData();
