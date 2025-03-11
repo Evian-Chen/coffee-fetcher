@@ -91,52 +91,47 @@ const MONGODB_COFFEE_SHOP = process.env.MONGODB_COFFEE_SHOP;
 //   });
 // }
 
-// async function fetchCafesByRegion(city, district) {
-//   let allResults = [];
-//   let seenPlaceIds = new Set();
+async function fetchCafesByRegion(city, district, cityConn) {
+  let allResults = [];
+  let seenPlaceIds = new Set();
 
-//   // get city collection connection
-//   console.log("getting shop model");
-//   if (!mongoose.connection.readyState) {
-//     console.error("trying to get model but mongoDB not connected");
-//     await connectDB();
-//   }
+  // 此 model 連接到目前 city 底下的 district collection
+  let cafeModel = cityConn.model(district, CoffeeShopSchema);
 
-//   let cafeModel = getCafeShopModel(city);
-//   console.log("cafeModel: ", cafeModel);
+  // ----- HEREHERE ----- //
 
-//   let url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${district}+${city}&type=cafe&language=zh-TW&key=${GOOGLE_API_KEY}`;
-//   let next_page = null;
+  let url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${district}+${city}&type=cafe&language=zh-TW&key=${GOOGLE_API_KEY}`;
+  let next_page = null;
 
-//   console.log(`fetching ${city} - ${district} cafe`);
+  console.log(`fetching ${city} - ${district} cafe`);
 
-//   while (url) {
-//     let response = await axios.get(url);
-//     let data = response.data;
+  while (url) {
+    let response = await axios.get(url);
+    let data = response.data;
 
-//     if (!data.results || data.results.length === 0) break;
+    if (!data.results || data.results.length === 0) break;
 
-//     for (let shop of data.results) {
-//       if (!seenPlaceIds.has(shop.place_id)) {
-//         seenPlaceIds.add(shop.place_id);
-//         allResults.push(shop);
-//         await saveToMongoDB(shop, city, district, cafeModel);
-//       }
-//     }
+    for (let shop of data.results) {
+      if (!seenPlaceIds.has(shop.place_id)) {
+        seenPlaceIds.add(shop.place_id);
+        allResults.push(shop);
+        await saveToMongoDB(shop, city, district, cafeModel);
+      }
+    }
 
-//     console.log(`${city} - ${district} get ${allResults.length}`);
+    console.log(`${city} - ${district} get ${allResults.length}`);
 
-//     next_page = data.next_page_token;
-//     if (next_page) {
-//       await new Promise((resolve) => setTimeout(resolve, 2000));
-//       url = `https://maps.googleapis.com/maps/api/place/textsearch/json?pagetoken=${next_page}&language=zh-TW&key=${GOOGLE_API_KEY}`;
-//     } else {
-//       url = null;
-//     }
-//   }
+    next_page = data.next_page_token;
+    if (next_page) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      url = `https://maps.googleapis.com/maps/api/place/textsearch/json?pagetoken=${next_page}&language=zh-TW&key=${GOOGLE_API_KEY}`;
+    } else {
+      url = null;
+    }
+  }
 
-//   return { city, district, cafes: allResults };
-// }
+  return { city, district, cafes: allResults };
+}
 
 async function ensureDatabaseExists(city) {
   const testData = {
@@ -242,15 +237,20 @@ async function fetchAllShops() {
 
     finalResults[city] = {};
 
-    // set up collection
-    await ensureDatabaseExists(city);
-    mongoose.connection.close();
+    // 取得目前縣市的連線
+    const cityConn = await connectCityDB(city);
 
-  //   for (const district of districts) {
-  //     console.log("d:", district);
-  //     const regionData = await fetchCafesByRegion(city, district);
-  //     finalResults[city][district] = regionData.cafes;
-  //   }
+    // set up collection
+    // await ensureDatabaseExists(city);
+
+    for (const district of districts) {
+      console.log("d:", district);
+
+      // 搜尋單個行政區的咖啡廳
+      const regionData = await fetchCafesByRegion(city, district, cityConn);
+      process.exit(0);
+      // finalResults[city][district] = regionData.cafes;
+    }
   }
 
   // console.log("fetched all cities: ", finalResults.length);
