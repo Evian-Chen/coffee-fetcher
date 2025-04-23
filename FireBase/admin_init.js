@@ -7,13 +7,15 @@ async function admin_init() {
         databaseURL: "https://coffee-fetcher-e3938-default-rtdb.firebaseio.com"
     });
 
-    const db = admin.firestore();
+    const rtdb = admin.database();
+    const firestore = admin.firestore();
 
-    const snapshot = await db.collection("coffee_shops").get();
+    const snapshot = await rtdb.ref("/coffee_shops").once("value");
+    const shops = snapshot.val();
 
-    for (const doc of snapshot.docs) {
-        console.log(doc.id);
-        console.log("hi");
+    for (const shop in shops) {
+        // realtime database is workable
+        console.log(shop);
     }
 }
 
