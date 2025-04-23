@@ -88,14 +88,4 @@ const CoffeeShopSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// export const getCafeShopModel = (city) =>
-//   mongoose.models[city] || mongoose.model(city, CoffeeShopSchema, city);
-
-// export const getCafeShopModel = (city) => {
-//   if (mongoose.connection.readyState !== 1) {
-//     console.error("trying to get model, try connectDB() first");
-//   }
-//   return mongoose.models[city] || mongoose.model(city, CoffeeShopSchema, city);
-// };
-
 export default CoffeeShopSchema;

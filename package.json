@@ -13,7 +13,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module",
+  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/Evian-Chen/coffee-fetcher/issues"
   },
@@ -25,6 +25,7 @@
     "coffee-fetcher": "file:",
     "dotenv": "^16.4.7",
     "firebase": "^11.4.0",
+    "firebase-admin": "^13.3.0",
     "mongodb": "^6.14.2",
     "mongoose": "^8.12.1"
   }

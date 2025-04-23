@@ -1,7 +1,7 @@
-import { getDiscrits } from "./getDiscrits.js";
-import { connectCityDB } from "./lib/mongodb.js";
+import { getDiscrits } from "../getDiscrits.js";
+import { connectCityDB } from "../lib/mongodb.js";
 import mongoose from "mongoose";
-import CoffeeShopSchema from "./models/CoffeeShop.js";
+import CoffeeShopSchema from "../models/CoffeeShop.js";
 import { db } from "./init_firebase.js";
 import { ref, update } from "firebase/database";
 
