@@ -1,24 +1,29 @@
 import { db } from "./init_firestore.js"
 import axios from "axios";
 import { CITIES, DISTRICTS } from "./taiwanCityDistricts.js"
+import dotenv from 'dotenv';
 
+dotenv.config();
+const GOOGLEAPIKEY = process.env.GOOGLE_MAP_API_KEY;
 const CATEGORIES = ["highRatings", "serves_beer", "serves_brunch", "serves_dinner", "takeout"];
 
-const googleSearchApiKey = process.env.GOOGLE_MAP_API_KEY;
-
 async function expandDataset() {
+  console.log("KEY:", GOOGLEAPIKEY); 
   for (const city of CITIES) {
     for (const district of DISTRICTS[city]) {
       console.log(`searching ${city}, ${district}`);
       const cafes = await getNearByCafes(city, district);
       await categorize(city, district, cafes);
+
+      console.log(`finish ${city}, ${district}`);
+      return;
     }
   }
 }
 
 async function getNearByCafes(city, district) {
   // 1. 把縣市切成小方塊
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${city}${district}&language=zh-TW&key=${googleSearchApiKey}`;
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${city}${district}&language=zh-TW&key=${GOOGLEAPIKEY}`;
   const result = await axios.get(url);
   const data = result.data;
 
@@ -26,26 +31,31 @@ async function getNearByCafes(city, district) {
     throw new Error (`error: status: ${data.status}`);
   }
 
-  const res = data.results;
+  const res = data.results[0]; 
   const sw = res.geometry.viewport.southwest;
   const ne = res.geometry.viewport.northeast;
 
   const grid = generateGridPoints(sw, ne, 1000);
-  console.log(`generate ${grid.count} grid point`);
+  console.log(`generate ${grid.length} grid point`);
 
   // 2. 搜尋每個小方塊
-  const allCafes = new Set();
+  const allCafes = [];
   const seen = new Set();
   for (const point of grid) {
-    const cafeUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${point[0]},${point[1]}&radius=1000&keyword=咖啡&language=zh-TW&key=${googleSearchApiKey}`;
-    const cafeRes = await axios.get(cafeUrl);
-    const cafes = cafeRes.results;
+    const cafeUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${point[0]},${point[1]}&radius=1000&keyword=咖啡&language=zh-TW&key=${GOOGLEAPIKEY}`;
+    try {
+      const cafeRes = await axios.get(cafeUrl);
+      const cafes = cafeRes.results;
 
-    for (const cafe of cafes) {
-      if (!seen.has(cafe.place_id)) {
-        seen.add(cafe.place_id);
-        allCafes.add(cafe);
+      for (const cafe of cafes) {
+        if (!seen.has(cafe.place_id)) {
+          seen.add(cafe.place_id);
+          allCafes.push(cafe);
+        }
       }
+    } catch (e) {
+      console.error("Failed to fetch detail:", e.message);
+      return;
     }
   }
 
@@ -89,7 +99,7 @@ async function categorize(city, district, cafes) {
 
       const doc = await cafeRef.get();
       if (doc.exists) {
-        console.lof(`${cafe.name} exists`);
+        console.log(`${cafe.name} exists`);
         return;
       }
 
@@ -100,18 +110,23 @@ async function categorize(city, district, cafes) {
 }
 
 async function addToDataset(city, district, cafe, category, cafeRef) {
-  const detailUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${cafe.place_id}&language=zh-TW&key=${googleSearchApiKey}`;
-  const res = await axios.get(detailUrl);
-  const data = res.result;
+  const detailUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${cafe.place_id}&language=zh-TW&key=${GOOGLEAPIKEY}`;
+  try {
+    const res = await axios.get(detailUrl);
+    const data = res.data.result;
 
-  if (!(category === 'highRatings' && cafe.rating >= 4.3)) { return; } 
-  if (!(category === 'serves_beer' && data.serves_beer)) { return; }
-  if (!(category === 'serves_brunch' && data.serves_lunch)) { return; }
-  if (!(category === 'takeout' && data.takeout)) { return; }
+    if (!(category === 'highRatings' && cafe.rating >= 4.3)) { return; } 
+    if (!(category === 'serves_beer' && data.serves_beer)) { return; }
+    if (!(category === 'serves_brunch' && data.serves_lunch)) { return; }
+    if (!(category === 'takeout' && data.takeout)) { return; }
 
-  const cafeData = buildCafeData(city, district, data);
-  cafeRef.set(cafeData);
-}
+    const cafeData = buildCafeData(city, district, data);
+    await cafeRef.set(cafeData);
+  } catch (e) {
+    console.error("❌ Failed to fetch detail:", e.message);
+    return;
+  }
+} 
 
 function buildCafeData(city, district, data) {
   const cafeData = {
